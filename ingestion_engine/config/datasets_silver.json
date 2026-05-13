@@ -1,0 +1,254 @@
+{
+  "engine": {
+    "checkpoint_root": "abfss://lakehouse@lakehouse001.dfs.core.windows.net/_engine/checkpoints",
+    "ops": {
+      "catalog": "lakehouse",
+      "schema":  "ingestion",
+      "table":   "control"
+    }
+  },
+
+  "datasets": [
+
+    {
+      "name"       : "product_current",
+      "description": "Catálogo de productos — current state con SCD Type 1",
+      "load_type"  : "full_merge",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "product_catalog_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "product_current",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/product_current"
+      },
+      "merge_keys"    : ["product_id"],
+      "watermark_col" : "effective_ts",
+      "partition_cols": ["category"],
+      "schema": [
+        { "name": "product_id",      "type": "string" },
+        { "name": "sku",             "type": "string" },
+        { "name": "product_name",    "type": "string" },
+        { "name": "category",        "type": "string" },
+        { "name": "brand",           "type": "string" },
+        { "name": "unit_of_measure", "type": "string" },
+        { "name": "price_eur",       "type": "double" },
+        { "name": "is_active",       "type": "boolean" },
+        { "name": "effective_ts",    "type": "timestamp" },
+        { "name": "extract_ts",      "type": "timestamp" },
+        { "name": "_silver_created_at",  "type": "timestamp" },
+        { "name": "_silver_modified_at", "type": "timestamp" },
+        { "name": "_source_file",        "type": "string" }
+      ]
+    },
+
+    {
+      "name"       : "inventory_current",
+      "description": "Inventario actual por almacén y SKU — replace por partición de snapshot",
+      "load_type"  : "incremental_replace",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "inventory_snapshot_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "inventory_current",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/inventory_current"
+      },
+      "merge_keys"    : ["warehouse_id", "sku"],
+      "watermark_col" : "snapshot_ts",
+      "partition_cols": ["warehouse_id"],
+      "schema": [
+        { "name": "warehouse_id",    "type": "string" },
+        { "name": "sku",             "type": "string" },
+        { "name": "snapshot_ts",     "type": "timestamp" },
+        { "name": "extract_ts",      "type": "timestamp" },
+        { "name": "available_units", "type": "long" },
+        { "name": "reserved_units",  "type": "long" },
+        { "name": "_silver_created_at",  "type": "timestamp" },
+        { "name": "_silver_modified_at", "type": "timestamp" },
+        { "name": "_source_file",        "type": "string" }
+      ]
+    },
+
+    {
+      "name"       : "orders_current",
+      "description": "Pedidos — current state aplicando CDC (I/U/D) con soft delete",
+      "load_type"  : "cdc_merge",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "orders_cdc_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "orders_current",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/orders_current"
+      },
+      "merge_keys"      : ["order_id"],
+      "cdc_op_col"      : "op_type",
+      "cdc_sequence_col": "sequence_num",
+      "cdc_delete_col"  : "is_deleted",
+      "watermark_col"   : "op_ts",
+      "partition_cols"  : ["sales_channel"],
+      "schema": [
+        { "name": "order_id",        "type": "string" },
+        { "name": "customer_id",     "type": "string" },
+        { "name": "order_status",    "type": "string" },
+        { "name": "sales_channel",   "type": "string" },
+        { "name": "order_total_eur", "type": "double" },
+        { "name": "item_count",      "type": "long" },
+        { "name": "op_type",         "type": "string" },
+        { "name": "op_ts",           "type": "timestamp" },
+        { "name": "sequence_num",    "type": "long" },
+        { "name": "is_deleted",      "type": "boolean" },
+        { "name": "_silver_created_at",  "type": "timestamp" },
+        { "name": "_silver_modified_at", "type": "timestamp" },
+        { "name": "_source_file",        "type": "string" }
+      ]
+    },
+
+    {
+      "name"       : "orders_history",
+      "description": "Histórico append-only de todos los eventos CDC de pedidos",
+      "load_type"  : "cdc_history",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "orders_cdc_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "orders_history",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/orders_history"
+      },
+      "merge_keys"      : ["order_id", "sequence_num"],
+      "cdc_op_col"      : "op_type",
+      "cdc_sequence_col": "sequence_num",
+      "watermark_col"   : "op_ts",
+      "partition_cols"  : ["_ingested_date"],
+      "schema": [
+        { "name": "order_id",        "type": "string" },
+        { "name": "customer_id",     "type": "string" },
+        { "name": "order_status",    "type": "string" },
+        { "name": "sales_channel",   "type": "string" },
+        { "name": "order_total_eur", "type": "double" },
+        { "name": "item_count",      "type": "long" },
+        { "name": "op_type",         "type": "string" },
+        { "name": "op_ts",           "type": "timestamp" },
+        { "name": "sequence_num",    "type": "long" },
+        { "name": "is_deleted",      "type": "boolean" },
+        { "name": "_ingested_date",      "type": "date" },
+        { "name": "_silver_created_at",  "type": "timestamp" },
+        { "name": "_source_file",        "type": "string" }
+      ]
+    },
+
+    {
+      "name"       : "field_images",
+      "description": "Imágenes de campo — append deduplicado por path de origen",
+      "load_type"  : "append_dedup",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "field_images_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "field_images",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/field_images"
+      },
+      "merge_keys"    : ["_source_file"],
+      "partition_cols": ["_field_id", "_capture_date"],
+      "schema": [
+        { "name": "_source_file",        "type": "string" },
+        { "name": "_field_id",           "type": "string" },
+        { "name": "_capture_date",       "type": "date" },
+        { "name": "_image_seq",          "type": "integer" },
+        { "name": "_file_size_bytes",    "type": "long" },
+        { "name": "_source_modified_at", "type": "timestamp" },
+        { "name": "content",             "type": "binary" },
+        { "name": "_silver_created_at",  "type": "timestamp" }
+      ]
+    },
+
+    {
+      "name"       : "sensor_reads",
+      "description": "Lecturas IoT limpias — filtrado de outliers y dedup por event_id",
+      "load_type"  : "streaming_append",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "sensor_events_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "sensor_reads",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/sensor_reads"
+      },
+      "merge_keys"    : ["sensor_event_id"],
+      "watermark_col" : "event_ts",
+      "watermark_delay": "10 minutes",
+      "partition_cols": ["field_id", "_ingested_date"],
+      "filters": [
+        { "col": "temperature_c",     "min": -10, "max": 60 },
+        { "col": "soil_moisture_pct", "min": 0,   "max": 100 },
+        { "col": "ph_level",          "min": 0,   "max": 14 }
+      ],
+      "schema": [
+        { "name": "sensor_event_id",   "type": "string" },
+        { "name": "field_id",          "type": "string" },
+        { "name": "event_ts",          "type": "timestamp" },
+        { "name": "temperature_c",     "type": "double" },
+        { "name": "soil_moisture_pct", "type": "double" },
+        { "name": "ph_level",          "type": "double" },
+        { "name": "_ingested_date",    "type": "date" },
+        { "name": "_kafka_offset",     "type": "long" },
+        { "name": "_silver_created_at","type": "timestamp" }
+      ]
+    },
+
+    {
+      "name"       : "app_events",
+      "description": "Eventos de app móvil — deduplicados por event_id",
+      "load_type"  : "streaming_append",
+      "source": {
+        "catalog": "bronze",
+        "schema" : "farmia",
+        "table"  : "app_events_raw"
+      },
+      "destination": {
+        "catalog"      : "silver",
+        "schema"       : "farmia",
+        "table"        : "app_events",
+        "external_path": "abfss://silver@lakehouse001.dfs.core.windows.net/farmia/app_events"
+      },
+      "merge_keys"    : ["event_id"],
+      "watermark_col" : "event_ts",
+      "watermark_delay": "10 minutes",
+      "partition_cols": ["event_type", "_ingested_date"],
+      "schema": [
+        { "name": "event_id",          "type": "string" },
+        { "name": "event_ts",          "type": "timestamp" },
+        { "name": "session_id",        "type": "string" },
+        { "name": "customer_id",       "type": "string" },
+        { "name": "event_type",        "type": "string" },
+        { "name": "product_id",        "type": "string" },
+        { "name": "channel",           "type": "string" },
+        { "name": "_ingested_date",    "type": "date" },
+        { "name": "_kafka_offset",     "type": "long" },
+        { "name": "_silver_created_at","type": "timestamp" }
+      ]
+    }
+
+  ]
+}

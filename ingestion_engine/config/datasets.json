@@ -1,0 +1,171 @@
+{
+  "engine": {
+    "checkpoint_root": "abfss://lakehouse@lakehouse001.dfs.core.windows.net/_engine/checkpoints",
+    "schema_root":     "abfss://lakehouse@lakehouse001.dfs.core.windows.net/_engine/schemas",
+    "ops": {
+      "catalog": "lakehouse",
+      "schema":  "ingestion",
+      "table":   "control"
+    }
+  },
+
+  "datasets": [
+
+    {
+      "name":         "product_catalog",
+      "description":  "Catálogo de productos agrícolas — full load diario",
+      "ingest_type":  "batch",
+      "load_type":    "full",
+      "format":       "parquet",
+      "landing_path": "abfss://landing@lakehouse001.dfs.core.windows.net/farmia/product_catalog",
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "product_catalog_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/product_catalog_raw"
+      },
+      "partition_cols": ["_ingested_date"],
+      "merge_schema":   true,
+      "schema": [
+        { "name": "product_id",      "type": "string" },
+        { "name": "sku",             "type": "string" },
+        { "name": "product_name",    "type": "string" },
+        { "name": "category",        "type": "string" },
+        { "name": "brand",           "type": "string" },
+        { "name": "unit_of_measure", "type": "string" },
+        { "name": "price_eur",       "type": "double" },
+        { "name": "is_active",       "type": "boolean" },
+        { "name": "effective_ts",    "type": "timestamp" },
+        { "name": "extract_ts",      "type": "timestamp" }
+      ]
+    },
+
+    {
+      "name":         "inventory",
+      "description":  "Snapshot diario de inventario por almacén",
+      "ingest_type":  "batch",
+      "load_type":    "incremental",
+      "format":       "parquet",
+      "landing_path": "abfss://landing@lakehouse001.dfs.core.windows.net/farmia/inventory",
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "inventory_snapshot_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/inventory_snapshot_raw"
+      },
+      "partition_cols": ["warehouse_id", "_ingested_date"],
+      "merge_schema":   true,
+      "schema": [
+        { "name": "warehouse_id",    "type": "string" },
+        { "name": "sku",             "type": "string" },
+        { "name": "snapshot_ts",     "type": "timestamp" },
+        { "name": "extract_ts",      "type": "timestamp" },
+        { "name": "available_units", "type": "long" },
+        { "name": "reserved_units",  "type": "long" }
+      ]
+    },
+
+    {
+      "name":         "orders_cdc",
+      "description":  "Eventos CDC de pedidos con op_type I/U/D",
+      "ingest_type":  "batch",
+      "load_type":    "cdc",
+      "format":       "json",
+      "landing_path": "abfss://landing@lakehouse001.dfs.core.windows.net/farmia/orders_cdc",
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "orders_cdc_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/orders_cdc_raw"
+      },
+      "partition_cols": ["_ingested_date"],
+      "merge_schema":   true,
+      "schema": [
+        { "name": "order_id",        "type": "string" },
+        { "name": "customer_id",     "type": "string" },
+        { "name": "order_status",    "type": "string" },
+        { "name": "sales_channel",   "type": "string" },
+        { "name": "order_total_eur", "type": "double" },
+        { "name": "item_count",      "type": "long" },
+        { "name": "op_type",         "type": "string" },
+        { "name": "op_ts",           "type": "timestamp" },
+        { "name": "sequence_num",    "type": "long" },
+        { "name": "is_deleted",      "type": "boolean" }
+      ]
+    },
+
+    {
+      "name":         "field_images",
+      "description":  "Imágenes JPEG de campo — binario con metadatos extraídos del filename",
+      "ingest_type":  "batch",
+      "load_type":    "full",
+      "format":       "binaryFile",
+      "landing_path": "abfss://landing@lakehouse001.dfs.core.windows.net/farmia/field_images",
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "field_images_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/field_images_raw"
+      },
+      "partition_cols": ["_field_id", "_capture_date"],
+      "merge_schema":   false,
+      "schema":         []
+    },
+
+    {
+      "name":         "sensors",
+      "description":  "Lecturas IoT de sensores de campo — streaming desde Kafka",
+      "ingest_type":  "streaming",
+      "format":       "json",
+      "kafka": {
+        "topic_pattern": "farmia.sensors",
+        "key_subject":   "sensor_field_id",
+        "value_subject": "sensor_event"
+      },
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "sensor_events_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/sensor_events_raw"
+      },
+      "partition_cols": ["_ingested_date", "field_id"],
+      "schema": [
+        { "name": "sensor_event_id",   "type": "string" },
+        { "name": "field_id",          "type": "string" },
+        { "name": "event_ts",          "type": "string" },
+        { "name": "temperature_c",     "type": "double" },
+        { "name": "soil_moisture_pct", "type": "double" },
+        { "name": "ph_level",          "type": "double" }
+      ]
+    },
+
+    {
+      "name":         "app_events",
+      "description":  "Eventos de la app móvil y redes sociales — streaming desde Kafka",
+      "ingest_type":  "streaming",
+      "format":       "json",
+      "kafka": {
+        "topic_pattern": "farmia.app_events",
+        "key_subject":   "customer_id",
+        "value_subject": "app_event"
+      },
+      "destination": {
+        "catalog":       "bronze",
+        "schema":        "farmia",
+        "table":         "app_events_raw",
+        "external_path": "abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/app_events_raw"
+      },
+      "partition_cols": ["_ingested_date", "event_type"],
+      "schema": [
+        { "name": "event_id",    "type": "string" },
+        { "name": "event_ts",    "type": "string" },
+        { "name": "session_id",  "type": "string" },
+        { "name": "customer_id", "type": "string" },
+        { "name": "event_type",  "type": "string" },
+        { "name": "product_id",  "type": "string" },
+        { "name": "channel",     "type": "string" }
+      ]
+    }
+
+  ]
+}
