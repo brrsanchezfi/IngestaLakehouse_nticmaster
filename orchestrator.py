@@ -9,7 +9,12 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## ⚙️ 0 · Setup
+# MAGIC ![](imgs/flujo_basico.png)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 0 · Setup
 
 # COMMAND ----------
 
@@ -37,7 +42,7 @@ print(f"Engine path  : {ENGINE_PATH}")
 # MAGIC %md
 # MAGIC ## Datagen
 # MAGIC
-# MAGIC se han creados 3 modulos para la genracion artificial de data
+# MAGIC Se han creados 3 modulos para la genracion artificial de data
 
 # COMMAND ----------
 
@@ -136,7 +141,7 @@ print("✓ Motor de ingesta cargado")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 📅 1 · Parámetros de ejecución
+# MAGIC ## 1 · Parámetros de ejecución
 
 # COMMAND ----------
 
@@ -172,7 +177,7 @@ print(f"""
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 🌱 2 · Datagen — Generar datos sintéticos en Landing
+# MAGIC ## 2 · Datagen — Generar datos sintéticos en Landing
 
 # COMMAND ----------
 
@@ -201,7 +206,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 📡 3 · Kafka Producer — Publicar eventos en Confluent
+# MAGIC ## 3 · Kafka Producer — Publicar eventos en Confluent
 # MAGIC
 # MAGIC Solo en modo `single` — en backfill el producer ya corre dentro del datagen.
 
@@ -221,7 +226,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 🥉 4 · Bronze — Landing → Bronze (Autoloader + Kafka)
+# MAGIC ## 4 · Bronze — Landing → Bronze (Autoloader + Kafka)
 
 # COMMAND ----------
 
@@ -244,7 +249,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 🥈 5 · Silver — Bronze → Silver
+# MAGIC ## 5 · Silver — Bronze → Silver
 
 # COMMAND ----------
 
@@ -258,7 +263,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## ✅ 6 · Validación
+# MAGIC ## 6 · Validación
 
 # COMMAND ----------
 
@@ -280,11 +285,11 @@ spark.sql("""
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 🔧 Utilidades — Solo desarrollo
+# MAGIC ## Utilidades
 
 # COMMAND ----------
 
-# Descomenta lo que necesites:
+# Descomentar lo que se necesite:
 
 # Reset dataset específico
 # engine.reset_dataset("product_catalog")

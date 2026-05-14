@@ -40,6 +40,10 @@ El diseño persigue cuatro objetivos:
 
 ### Diagrama de arquitectura
 
+![Arquitectura del Data Lakehouse de FarmIA](imgs/arquitectura.png)
+
+### Flujo simplificado
+
 ![Arquitectura del Data Lakehouse de FarmIA](imgs/flujo_basico.png)
 
 ### Estructura de cada capa
@@ -453,4 +457,155 @@ engine.reset_dataset("product_catalog")
 engine.reset_all()
 ```
 
-`reset_dataset` ejecuta `DROP TABLE IF EXISTS` en Unity Catalog y borra recursivamente `external_path`, el `checkpointLocation` y el `schemaLocation` asociados al dataset. Útil cuando hay `delta_log` huérfano o cambios de esquema incompatibles.
+`reset_dataset` ejecuta `DROP TABLE IF EXISTS` en Unity Catalog y borra recursivamente `external_path`, el `checkpointLocation` y el `schemaLocation` asociados al dataset.
+
+---
+## Logs de la ultima ejecucion (a falta de test)
+```python
+2026-05-11 04:04:10,300 [INFO] Config cargada: 6 datasets (4 batch, 2 streaming)
+2026-05-11 04:04:21,310 [INFO] Tabla ops lista: lakehouse.ingestion.control
+2026-05-11 04:04:21,852 [INFO] Config Silver cargada: 7 datasets
+2026-05-11 04:04:22,109 [INFO] === Generación batch: ['product_catalog', 'inventory', 'orders_cdc'] | fecha: 2026-04-01 ===
+2026-05-11 04:04:22,109 [INFO] Generando product_catalog para 2026-04-01...
+[Datagen] fecha=2026-04-01 images=True streaming=False
+2026-05-11 04:04:34,294 [INFO] [PARQUET] abfss://landing@lakehouse001.dfs.core.windows.net/farmia/product_catalog/2026-04-01.parquet  (120 filas)
+2026-05-11 04:04:34,295 [INFO] Generando inventory desde 2026-04-01 (2 días)...
+2026-05-11 04:04:36,554 [INFO] [PARQUET] abfss://landing@lakehouse001.dfs.core.windows.net/farmia/inventory/2026-04-01.parquet  (240 filas)
+2026-05-11 04:04:38,307 [INFO] [PARQUET] abfss://landing@lakehouse001.dfs.core.windows.net/farmia/inventory/2026-04-02.parquet  (240 filas)
+2026-05-11 04:04:38,308 [INFO] Generando orders_cdc (inserts) para 2026-04-01...
+2026-05-11 04:04:40,293 [INFO] [JSON] abfss://landing@lakehouse001.dfs.core.windows.net/farmia/orders_cdc/2026-04-01.json  (180 filas)
+2026-05-11 04:04:40,295 [INFO] Generando orders_cdc (updates+deletes) para 2026-04-02...
+2026-05-11 04:04:41,965 [INFO] [JSON] abfss://landing@lakehouse001.dfs.core.windows.net/farmia/orders_cdc/2026-04-02.json  (180 filas)
+2026-05-11 04:04:41,967 [INFO] === Generación batch completada ===
+2026-05-11 04:04:41,968 [INFO] Generando imágenes sintéticas | fecha: 2026-04-01 → abfss://landing@lakehouse001.dfs.core.windows.net/farmia/field_images
+Wrote 26099 bytes.
+Wrote 27348 bytes.
+Wrote ...
+2026-05-11 04:04:59,261 [INFO] Imágenes generadas: 80  (4 campos × 20)
+Wrote 23198 bytes.
+[Datagen] completado para 2026-04-01
+2026-05-11 04:04:59,451 [INFO] Producer sensors → topic: farmia.sensors  total: 400
+Publicando en Kafka...
+%6|1778472300.643|GETSUBSCRIPTIONS|rdkafka#producer-1| [thrd:main]: Telemetry client instance id changed from AAAAAAAAAAAAAAAAAAAAAA to 5tGYRMi5RH29nU1U/aU+tA
+2026-05-11 04:05:02,059 [INFO] sensors: 50/400
+2026-05-11 04:05:06,066 [INFO] sensors: 100/400
+2026-05-11 04:05:09,999 [INFO] sensors: 150/400
+2026-05-11 04:05:13,917 [INFO] sensors: 200/400
+2026-05-11 04:05:17,847 [INFO] sensors: 250/400
+2026-05-11 04:05:21,769 [INFO] sensors: 300/400
+2026-05-11 04:05:25,717 [INFO] sensors: 350/400
+2026-05-11 04:05:29,635 [INFO] sensors: 400/400
+2026-05-11 04:05:29,636 [INFO] sensors: 400 mensajes publicados ✓
+2026-05-11 04:05:29,637 [INFO] Producer app_events → topic: farmia.app_events  total: 700
+2026-05-11 04:05:34,116 [INFO] app_events: 100/700
+2026-05-11 04:05:41,945 [INFO] app_events: 200/700
+2026-05-11 04:05:49,775 [INFO] app_events: 300/700
+2026-05-11 04:05:54,967 [INFO] app_events: 400/700
+2026-05-11 04:06:02,824 [INFO] app_events: 500/700
+2026-05-11 04:06:10,668 [INFO] app_events: 600/700
+2026-05-11 04:06:15,415 [INFO] app_events: 700/700
+2026-05-11 04:06:15,492 [INFO] app_events: 700 mensajes publicados ✓
+2026-05-11 04:06:15,655 [INFO] === Batch ingesta — 4 datasets ===
+2026-05-11 04:06:15,656 [INFO] [product_catalog] Iniciando  batch_id=a9be6ab8
+── Batch ──
+2026-05-11 04:06:24,325 [INFO] Tabla externa lista: bronze.farmia.product_catalog_raw → abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/product_catalog_raw
+2026-05-11 04:06:24,326 [INFO] [product_catalog] readStream ← abfss://landing@lakehouse001.dfs.core.windows.net/farmia/product_catalog
+2026-05-11 04:06:24,435 [INFO] [product_catalog] writeStream → bronze.farmia.product_catalog_raw
+2026-05-11 04:06:32,436 [INFO] [product_catalog] OK  batch_id=a9be6ab8  rows_written=120
+2026-05-11 04:06:33,682 [INFO] [inventory] Iniciando  batch_id=77f6dcbc
+2026-05-11 04:06:36,029 [INFO] Tabla externa lista: bronze.farmia.inventory_snapshot_raw → abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/inventory_snapshot_raw
+2026-05-11 04:06:36,032 [INFO] [inventory] readStream ← abfss://landing@lakehouse001.dfs.core.windows.net/farmia/inventory
+2026-05-11 04:06:36,033 [INFO] [inventory] writeStream → bronze.farmia.inventory_snapshot_raw
+2026-05-11 04:06:39,404 [INFO] [inventory] OK  batch_id=77f6dcbc  rows_written=480
+2026-05-11 04:06:40,820 [INFO] [orders_cdc] Iniciando  batch_id=4c7b3d1b
+2026-05-11 04:06:43,042 [INFO] Tabla externa lista: bronze.farmia.orders_cdc_raw → abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/orders_cdc_raw
+2026-05-11 04:06:43,043 [INFO] [orders_cdc] readStream ← abfss://landing@lakehouse001.dfs.core.windows.net/farmia/orders_cdc
+2026-05-11 04:06:43,044 [INFO] [orders_cdc] writeStream → bronze.farmia.orders_cdc_raw
+2026-05-11 04:06:49,821 [INFO] [orders_cdc] OK  batch_id=4c7b3d1b  rows_written=360
+2026-05-11 04:06:50,961 [INFO] [field_images] Iniciando  batch_id=c4a1007d
+2026-05-11 04:06:52,656 [INFO] Tabla externa lista: bronze.farmia.field_images_raw → abfss://bronze@lakehouse001.dfs.core.windows.net/farmia/field_images_raw
+2026-05-11 04:06:52,657 [INFO] [field_images] readStream ← abfss://landing@lakehouse001.dfs.core.windows.net/farmia/field_images
+2026-05-11 04:06:52,658 [INFO] [field_images] writeStream → bronze.farmia.field_images_raw
+2026-05-11 04:06:55,608 [INFO] [field_images] OK  batch_id=c4a1007d  rows_written=80
+2026-05-11 04:06:56,767 [INFO] Completado sin errores ✓
+✓ Batch completado — fallidos: ninguno
+2026-05-11 04:06:56,901 [INFO] === Streaming — arrancando 2 queries ===
+── Streaming ──
+2026-05-11 04:06:57,427 [INFO] Schema listo: bronze.farmia
+2026-05-11 04:06:58,751 [INFO] [sensors] Query arrancada → bronze.farmia.sensor_events_raw
+2026-05-11 04:06:59,007 [INFO] Schema listo: bronze.farmia
+2026-05-11 04:07:00,000 [INFO] [app_events] Query arrancada → bronze.farmia.app_events_raw
+2026-05-11 04:07:00,002 [INFO] Esperando query [sensors] — timeout=180s
+2026-05-11 04:07:07,515 [INFO] [sensors] Finalizada ✓
+2026-05-11 04:07:07,516 [INFO] Esperando query [app_events] — timeout=180s
+2026-05-11 04:07:09,743 [INFO] [app_events] Finalizada ✓
+✓ Streaming completado
+2026-05-11 04:07:09,911 [INFO] === Silver ingesta — 7 datasets ===
+2026-05-11 04:07:09,912 [INFO] [silver_product_current] Iniciando  batch_id=5d6d154b
+── Silver ──
+2026-05-11 04:07:11,592 [INFO] CDF ya activo en: bronze.farmia.product_catalog_raw
+2026-05-11 04:07:12,321 [INFO] Tabla Silver lista: silver.farmia.product_current
+2026-05-11 04:07:13,368 [INFO] [product_current] Ejecutando full_merge → silver.farmia.product_current
+2026-05-11 04:07:14,575 [INFO] [product_current] Primera carga — leyendo Bronze completo
+2026-05-11 04:07:22,116 [INFO] [product_current] OK  batch_id=5d6d154b  rows_written=0
+2026-05-11 04:07:23,188 [INFO] [product_current] OK — 120 filas en Silver
+2026-05-11 04:07:23,190 [INFO] [silver_inventory_current] Iniciando  batch_id=55c78c02
+2026-05-11 04:07:29,486 [INFO] CDF ya activo en: bronze.farmia.inventory_snapshot_raw
+2026-05-11 04:07:30,303 [INFO] Tabla Silver lista: silver.farmia.inventory_current
+2026-05-11 04:07:31,216 [INFO] [inventory_current] Ejecutando incremental_replace → silver.farmia.inventory_current
+2026-05-11 04:07:31,725 [INFO] [inventory_current] Primera carga — leyendo Bronze completo
+2026-05-11 04:07:36,686 [INFO] [inventory_current] OK  batch_id=55c78c02  rows_written=0
+2026-05-11 04:07:37,694 [INFO] [inventory_current] OK — 240 filas en Silver
+2026-05-11 04:07:37,696 [INFO] [silver_orders_current] Iniciando  batch_id=8e50f8cf
+2026-05-11 04:07:38,836 [INFO] CDF ya activo en: bronze.farmia.orders_cdc_raw
+2026-05-11 04:07:39,460 [INFO] Tabla Silver lista: silver.farmia.orders_current
+2026-05-11 04:07:39,965 [INFO] [orders_current] Ejecutando cdc_merge → silver.farmia.orders_current
+2026-05-11 04:07:40,438 [INFO] [orders_current] Primera carga — leyendo Bronze completo
+2026-05-11 04:07:44,792 [INFO] [orders_current] OK  batch_id=8e50f8cf  rows_written=0
+2026-05-11 04:07:45,921 [INFO] [orders_current] OK — 180 filas en Silver
+2026-05-11 04:07:45,922 [INFO] [silver_orders_history] Iniciando  batch_id=a8db8e3c
+2026-05-11 04:07:47,087 [INFO] CDF ya activo en: bronze.farmia.orders_cdc_raw
+2026-05-11 04:07:47,659 [INFO] Tabla Silver lista: silver.farmia.orders_history
+2026-05-11 04:07:48,581 [INFO] [orders_history] Ejecutando cdc_history → silver.farmia.orders_history
+2026-05-11 04:07:49,093 [INFO] [orders_history] Primera carga — leyendo Bronze completo
+2026-05-11 04:07:52,293 [INFO] [orders_history] OK  batch_id=a8db8e3c  rows_written=0
+2026-05-11 04:07:53,289 [INFO] [orders_history] OK — 360 filas en Silver
+2026-05-11 04:07:53,290 [INFO] [silver_field_images] Iniciando  batch_id=414d31bc
+2026-05-11 04:07:54,865 [INFO] CDF ya activo en: bronze.farmia.field_images_raw
+2026-05-11 04:07:55,540 [INFO] Tabla Silver lista: silver.farmia.field_images
+2026-05-11 04:07:56,290 [INFO] [field_images] Ejecutando append_dedup → silver.farmia.field_images
+2026-05-11 04:07:56,733 [INFO] [field_images] Primera carga — leyendo Bronze completo
+2026-05-11 04:07:59,146 [INFO] [field_images] OK  batch_id=414d31bc  rows_written=0
+2026-05-11 04:08:00,325 [INFO] [field_images] OK — 80 filas en Silver
+2026-05-11 04:08:00,326 [INFO] [silver_sensor_reads] Iniciando  batch_id=d4f6a0aa
+2026-05-11 04:08:02,289 [INFO] Tabla Silver lista: silver.farmia.sensor_reads
+2026-05-11 04:08:03,002 [INFO] [sensor_reads] Ejecutando streaming_append → silver.farmia.sensor_reads
+2026-05-11 04:08:09,340 [INFO] [sensor_reads] OK  batch_id=d4f6a0aa  rows_written=0
+2026-05-11 04:08:10,276 [INFO] [sensor_reads] OK — 69 filas en Silver
+2026-05-11 04:08:10,278 [INFO] [silver_app_events] Iniciando  batch_id=cd7ef8a5
+2026-05-11 04:08:12,018 [INFO] Tabla Silver lista: silver.farmia.app_events
+2026-05-11 04:08:12,755 [INFO] [app_events] Ejecutando streaming_append → silver.farmia.app_events
+2026-05-11 04:08:20,446 [INFO] [app_events] OK  batch_id=cd7ef8a5  rows_written=0
+2026-05-11 04:08:21,320 [INFO] [app_events] OK — 700 filas en Silver
+2026-05-11 04:08:21,321 [INFO] Silver completado sin errores ✓
+✓ Silver completado — fallidos: ninguno
+2026-05-11 04:08:21,466 [INFO] === Validación Bronze ===
+2026-05-11 04:08:21,962 [INFO]   bronze.farmia.product_catalog_raw: 120 filas
+2026-05-11 04:08:22,268 [INFO]   bronze.farmia.inventory_snapshot_raw: 480 filas
+2026-05-11 04:08:22,523 [INFO]   bronze.farmia.orders_cdc_raw: 360 filas
+2026-05-11 04:08:22,764 [INFO]   bronze.farmia.field_images_raw: 80 filas
+2026-05-11 04:08:23,038 [INFO]   bronze.farmia.sensor_events_raw: 788 filas
+2026-05-11 04:08:23,299 [INFO]   bronze.farmia.app_events_raw: 1,083 filas
+2026-05-11 04:08:23,466 [INFO] === Validación Silver ===
+2026-05-11 04:08:23,910 [INFO]   silver.farmia.product_current: 120 filas
+2026-05-11 04:08:24,258 [INFO]   silver.farmia.inventory_current: 240 filas
+2026-05-11 04:08:24,526 [INFO]   silver.farmia.orders_current: 180 filas
+2026-05-11 04:08:24,853 [INFO]   silver.farmia.orders_history: 360 filas
+2026-05-11 04:08:25,114 [INFO]   silver.farmia.field_images: 80 filas
+2026-05-11 04:08:25,389 [INFO]   silver.farmia.sensor_reads: 69 filas
+2026-05-11 04:08:25,669 [INFO]   silver.farmia.app_events: 700 filas
+
+```
+
+---
+## Tests
