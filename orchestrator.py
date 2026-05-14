@@ -1,11 +1,10 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 🌾 FarmIA — Orquestador de Ingesta
+# MAGIC # FarmIA — Orquestador de Ingesta
 # MAGIC
 # MAGIC Flujo completo: Datagen → Landing → Bronze → Silver
 # MAGIC
-# MAGIC **Antes de empezar:** ajusta `WORKSPACE_PATH` con la ruta real
-# MAGIC donde subiste el proyecto en tu workspace de Databricks.
+# MAGIC **Antes de empezar:** ajusta `WORKSPACE_PATH` con la ruta real absoluta del workspace de Databricks.
 
 # COMMAND ----------
 
@@ -32,6 +31,13 @@ for p in [DATAGEN_PATH, ENGINE_PATH]:
 
 print(f"Datagen path : {DATAGEN_PATH}")
 print(f"Engine path  : {ENGINE_PATH}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Datagen
+# MAGIC
+# MAGIC se han creados 3 modulos para la genracion artificial de data
 
 # COMMAND ----------
 
